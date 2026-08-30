@@ -2,7 +2,11 @@ import * as jwt from "jsonwebtoken";
 import * as crypto from "crypto";
 import { User } from "../models";
 
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-production";
+const _jwtSecretRaw = process.env.JWT_SECRET;
+if (!_jwtSecretRaw) {
+  throw new Error("JWT_SECRET environment variable must be set");
+}
+const JWT_SECRET: string = _jwtSecretRaw;
 const JWT_EXPIRES_IN = "8h";
 const STREAM_TOKEN_EXPIRES_IN = "4h";
 

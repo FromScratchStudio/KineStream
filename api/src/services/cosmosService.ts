@@ -28,13 +28,11 @@ async function getDatabase(): Promise<Database> {
 
 export async function getContainer(containerName: string): Promise<Container> {
   const db = await getDatabase();
-  const partitionKey = Object.entries(CONTAINERS).find(
-    ([, v]) => v === containerName
-  );
-  const partitionKeyPath =
-    PARTITION_KEYS[
-      (partitionKey?.[0] as keyof typeof PARTITION_KEYS) ?? "USERS"
-    ];
+  const entry = Object.entries(CONTAINERS).find(([, v]) => v === containerName);
+  if (!entry) {
+    throw new Error(`Unknown container: "${containerName}". Must be one of: ${Object.values(CONTAINERS).join(", ")}`);
+  }
+  const partitionKeyPath = PARTITION_KEYS[entry[0] as keyof typeof PARTITION_KEYS];
 
   const { container } = await db.containers.createIfNotExists({
     id: containerName,

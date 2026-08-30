@@ -73,13 +73,27 @@ async function purchaseTicket(
       return conflict("You already have a ticket for this session");
     }
 
-    // Decrement available seats (optimistic — in production use a transaction/stored procedure)
+    // Decrement available seats using ETag-based optimistic concurrency to prevent overbooking
     const updatedSession: StreamSession = {
       ...session,
       availableSeats: session.availableSeats - 1,
       updatedAt: new Date().toISOString(),
     };
-    await sessionsContainer.items.upsert(updatedSession);
+    try {
+      await sessionsContainer.items.upsert(updatedSession, {
+        accessCondition: {
+          type: "IfMatch",
+          condition: (session as unknown as Record<string, unknown>)["_etag"] as string,
+        },
+      });
+    } catch (concurrencyErr: unknown) {
+      const err = concurrencyErr as { code?: number };
+      if (err.code === 412) {
+        // Pre-condition failed: another request modified the session concurrently
+        return conflict("Could not reserve seat due to a concurrent request — please try again");
+      }
+      throw concurrencyErr;
+    }
 
     const now = new Date().toISOString();
     const ticket: Ticket = {

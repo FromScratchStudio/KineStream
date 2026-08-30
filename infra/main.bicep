@@ -13,6 +13,7 @@ param environment string = 'dev'
 param jwtSecret string
 
 var prefix = '${appName}-${environment}'
+var allowedOrigins = environment == 'dev' ? ['*'] : []
 var storageAccountName = replace('${appName}${environment}stor', '-', '')
 var cosmosAccountName = '${prefix}-cosmos'
 var functionAppName = '${prefix}-api'
@@ -132,7 +133,7 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
         { name: 'STORAGE_ACCOUNT', value: storageAccountName }
       ]
       cors: {
-        allowedOrigins: ['*']
+        allowedOrigins: allowedOrigins
       }
     }
     httpsOnly: true
